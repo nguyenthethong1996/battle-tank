@@ -17,6 +17,7 @@ class ai_agent():
 	mapinfo = []
 	map = []
 	checked = []
+	castle = [12*16, 24*16]
 	
 	def __init__(self):
 		self.mapinfo = []
@@ -67,11 +68,12 @@ class ai_agent():
 				self.map[tile[0][1]/16][tile[0][0]/16] = '~'
 			
 		#Add enemy tanks
+		char = ['w','d','s','a']
 		for tank in self.mapinfo[1]:
-			self.map[tank[0][1]/16][tank[0][0]/16] = 'e'
-			self.map[tank[0][1]/16+1][tank[0][0]/16] = 'e'
-			self.map[tank[0][1]/16][tank[0][0]/16+1] = 'e'
-			self.map[tank[0][1]/16+1][tank[0][0]/16+1] = 'e'
+			self.map[tank[0][1]/16][tank[0][0]/16] = char[tank[1]]
+			self.map[tank[0][1]/16+1][tank[0][0]/16] = char[tank[1]]
+			self.map[tank[0][1]/16][tank[0][0]/16+1] = char[tank[1]]
+			self.map[tank[0][1]/16+1][tank[0][0]/16+1] = char[tank[1]]
 			
 		var = 0
 		#Add player tank
@@ -82,28 +84,30 @@ class ai_agent():
 			self.map[(tank[0][1]+var)/16+1][(tank[0][0]+var)/16+1] = 'p'
 			
 		#Add bullets
-		for bullet in self.mapinfo[0]:		
+		char = ['^','>','v','<']
+		for bullet in self.mapinfo[0]:				
+		
 			if bullet[0][1]/16 >= 0 and bullet[0][0]/16 >= 0 and bullet[0][1]/16 < 26 and bullet[0][0]/16 < 26:
-				self.map[bullet[0][1]/16][bullet[0][0]/16] = 'b'
+				self.map[bullet[0][1]/16][bullet[0][0]/16] = char[bullet[1]]
+			
+			if bullet[0][1]/16+1 >= 0 and bullet[0][0]/16 >= 0 and bullet[0][1]/16+1 < 26 and bullet[0][0]/16 < 26:
+				self.map[bullet[0][1]/16+1][bullet[0][0]/16] = char[bullet[1]]
 				
-			"""
-			if bullet[0][1]/16+1 < 26 and bullet[0][0]/16 >= 0:
-				self.map[bullet[0][1]/16+1][bullet[0][0]/16] = 'b'
-			if bullet[0][0]/16+1 < 26 and bullet[0][1]/16 >= 0:
-				self.map[bullet[0][1]/16][bullet[0][0]/16+1] = 'b'
-			if bullet[0][0]/16+1 < 26 and bullet[0][1] < 26:
-				self.map[bullet[0][1]/16+1][bullet[0][0]/16+1] = 'b'
-			"""
+			if bullet[0][1]/16 >= 0 and bullet[0][0]/16+1 >= 0 and bullet[0][1]/16 < 26 and bullet[0][0]/16+1 < 26:
+				self.map[bullet[0][1]/16][bullet[0][0]/16+1] = char[bullet[1]]
 				
-	def isThreatened(self, playerNode):
+			if bullet[0][1]/16+1 >= 0 and bullet[0][0]/16+1 >= 0 and bullet[0][1]/16+1 < 26 and bullet[0][0]/16+1 < 26:
+				self.map[bullet[0][1]/16+1][bullet[0][0]/16+1] = char[bullet[1]]
+			
+	def isThreatenedByEnemy(self, playerNode):
+	
 		x = playerNode.top
 		y = playerNode.left
-		
 	
 		x = x - 1
-		cnt = 3
+		cnt = 8
 		while x >= 0 and self.map[x][y] <> '#' and cnt > 0:
-			if self.map[x][y] == 'e' or self.map[x][y] == 'b':
+			if self.map[x][y] == 's':
 				return 0
 			x = x - 1
 			cnt -= 1
@@ -111,9 +115,9 @@ class ai_agent():
 		x = playerNode.top
 		y = playerNode.left
 		y = y + 1
-		cnt = 3
+		cnt = 8
 		while y < 26 and self.map[x][y] <> '#' and cnt > 0:
-			if self.map[x][y] == 'e' or self.map[x][y] == 'b':
+			if self.map[x][y] == 'a':
 				return 1
 			y = y + 1
 			cnt -= 1
@@ -121,9 +125,9 @@ class ai_agent():
 		x = playerNode.top
 		y = playerNode.left
 		x = x + 1
-		cnt = 3
+		cnt = 8
 		while x < 26 and self.map[x][y] <> '#' and cnt > 0:
-			if self.map[x][y] == 'e' or self.map[x][y] == 'b':
+			if self.map[x][y] == 'w':
 				return 2
 			x = x + 1
 			cnt -= 1
@@ -131,46 +135,96 @@ class ai_agent():
 		x = playerNode.top
 		y = playerNode.left
 		y = y - 1
-		cnt = 3
+		cnt = 8
 		while y >= 0 and self.map[x][y] <> '#' and cnt > 0:
-			if self.map[x][y] == 'e' or self.map[x][y] == 'b':
+			if self.map[x][y] == 'd':
 				return 3
 			y = y - 1
 			cnt -= 1
 			
 		return 4
+				
+	def isThreatenedByBullet(self, playerNode):
+	
+		dx = [0,0,1,1]
+		dy = [0,1,0,1]
 		
+		for i in range(4):
+			x = playerNode.top + dx[i]
+			y = playerNode.left + dy[i]
+		
+			x = x - 1
+			cnt = 8
+			while x >= 0 and self.map[x][y] <> '#' and cnt > 0:
+				if self.map[x][y] == 'v':
+					return 0
+				x = x - 1
+				cnt -= 1
+				
+			x = playerNode.top
+			y = playerNode.left
+			y = y + 1
+			cnt = 8
+			while y < 26 and self.map[x][y] <> '#' and cnt > 0:
+				if self.map[x][y] == '<':
+					return 1
+				y = y + 1
+				cnt -= 1
+				
+			x = playerNode.top
+			y = playerNode.left
+			x = x + 1
+			cnt = 8
+			while x < 26 and self.map[x][y] <> '#' and cnt > 0:
+				if self.map[x][y] == '^':
+					return 2
+				x = x + 1
+				cnt -= 1
+				
+			x = playerNode.top
+			y = playerNode.left
+			y = y - 1
+			cnt = 8
+			while y >= 0 and self.map[x][y] <> '#' and cnt > 0:
+				if self.map[x][y] == '>':
+					return 3
+				y = y - 1
+				cnt -= 1
+				
+			return 4
+			
 	#check if the tank can fire in current position
 	def canFire(self, playerNode):
 		x = playerNode.top
 		y = playerNode.left
 		
+		char = ['w','d','s','a']
 		
 		if playerNode.dir == 0:
 			x = x - 1
 			while x >= 0 and self.map[x][y] <> '#':
-				if self.map[x][y] == 'e':
+				if self.map[x][y] in char:
 					return True
 				x = x - 1
 				
 		if playerNode.dir == 1:
 			y = y + 1
 			while y < 26 and self.map[x][y] <> '#':
-				if self.map[x][y] == 'e':
+				if self.map[x][y] in char:
 					return True
 				y = y + 1
 				
 		if playerNode.dir == 2:
 			x = x + 1
 			while x < 26 and self.map[x][y] <> '#':
-				if self.map[x][y] == 'e':
+				if self.map[x][y] in char:
 					return True
 				x = x + 1
 				
 		if playerNode.dir == 3:
 			y = y - 1
 			while y >= 0 and self.map[x][y] <> '#':
-				if self.map[x][y] == 'e':
+				if self.map[x][y] in char:
 					return True
 				y = y - 1
 				
@@ -275,25 +329,40 @@ class ai_agent():
 					q.put(node)
 		raise ValueError("Not found enemy")
 		
-	def nextPos(self, playerNode):
-		if playerNode.dir == 0:
-			playerNode.top = (self.mapinfo[3][0][0][1] - 2)/16
-			playerNode.left = (self.mapinfo[3][0][0][0])/16
-		if playerNode.dir == 1:
-			playerNode.top = (self.mapinfo[3][0][0][1])/16
-			playerNode.left = (self.mapinfo[3][0][0][0] + 2)/16
-		if playerNode.dir == 2:
-			playerNode.top = (self.mapinfo[3][0][0][1] + 2)/16
-			playerNode.left = (self.mapinfo[3][0][0][0])/16
-		if playerNode.dir == 3:
-			playerNode.top = (self.mapinfo[3][0][0][1])/16
-			playerNode.left = (self.mapinfo[3][0][0][0] - 2)/16
+	def nextPos(self, playerNode, path, id):
+		if path[id].dir == 0:
+			playerNode.top = playerNode.top - 1
+			playerNode.left = playerNode.left
+		if path[id].dir == 1:
+			playerNode.top = playerNode.top
+			playerNode.left = playerNode.left + 1
+		if path[id].dir == 2:
+			playerNode.top = playerNode.top + 1
+			playerNode.left = playerNode.left
+		if path[id].dir == 3:
+			playerNode.top = playerNode.top 
+			playerNode.left = playerNode.left - 1
 			
 		return playerNode
 		
+	def findTarget(self):
+	
+		shortest = 2000
+		id = -1
+		bestId = -1
+		
+	
+		for tank in self.mapinfo[1]:
+			id += 1
+			dist = abs(tank[0][0] - self.castle[0]) + abs(tank[0][1] - self.castle[1])
+			if dist < shortest: 
+				shortest = dist
+				bestId = id
+		
+		return bestId
 		
 	def operations (self,p_mapinfo,c_control):	
-		sys.stdout = open('output.txt', 'w')
+		#sys.stdout = open('output.txt', 'w')
 		moveDir = ["Move up", "Move right", "Move down", "Move left", "Standby"]
 	
 		self.mapInit()
@@ -306,7 +375,7 @@ class ai_agent():
 			self.mapUpdate()
 			
 			#print self.mapinfo[1]
-			print self.mapinfo[0]
+			#print self.mapinfo[0]
 			"""
 			for i in range(26):
 				for j in range(26): 
@@ -323,8 +392,13 @@ class ai_agent():
 			
 			if len(self.mapinfo[1]) > 0:
 				
+				enemyId = self.findTarget()
+				enemyId = 0
 				player = Node(self.mapinfo[3][0][0][1]/16, self.mapinfo[3][0][0][0]/16, self.mapinfo[3][0][2], -1)
-				enemy = Node(self.mapinfo[1][0][0][1]/16, self.mapinfo[1][0][0][0]/16, self.mapinfo[1][0][2], -1)
+				tmpPlayer = player = Node(self.mapinfo[3][0][0][1]/16, self.mapinfo[3][0][0][0]/16, self.mapinfo[3][0][2], -1)
+				enemy = Node(self.mapinfo[1][enemyId][0][1]/16, self.mapinfo[1][enemyId][0][0]/16, self.mapinfo[1][0][2], -1)
+				
+				#print "Best id %d" % enemyId
 				
 				#print "enemy"
 				#print enemy.top
@@ -355,25 +429,19 @@ class ai_agent():
 					if (XLeft - bounderLeft > 3):
 						move_dir = 3
 				"""
+				#if fuck:
 				#TURN LEFT OR RIGHT
-				if (move_dir == 1 or move_dir == 3) and (lastMove == 0 or lastMove == 2) : 
-					var = self.mapinfo[3][0][0][1] % 2
-					var = 1
-					print "top: %d var: %d " % (self.mapinfo[3][0][0][1], var)
-					#print var
-					if (self.mapinfo[3][0][0][1] - var)%16 <> 0:											
-						move_dir = lastMove						
-				#TURN UP OR DOWN
-				elif (move_dir == 0 or move_dir == 2) and (lastMove == 1 or lastMove == 3) : 
-					var = self.mapinfo[3][0][0][0] % 2
-					var = 1
-					print "left: %d var: %d " % (self.mapinfo[3][0][0][0], var)
-					#print var
-					if (self.mapinfo[3][0][0][0] - var)%16 <> 0:											
+				if (move_dir == 1 or move_dir == 3) and (lastMove == 0 or lastMove == 2): 
+					if (self.mapinfo[3][0][0][1]-3)%16 <> 0:
 						move_dir = lastMove
-					
-				"""	
+				#TURN UP OR DOWN
+				if (move_dir == 0 or move_dir == 2) and (lastMove == 1 or lastMove == 3): 
+					if (self.mapinfo[3][0][0][0]-3)%16 <> 0:
+						move_dir = lastMove
+				"""
 				
+				
+				"""
 				for i in range(26):
 					for j in range(26): 
 						sys.stdout.write(self.map[i][j])
@@ -381,37 +449,79 @@ class ai_agent():
 				
 				print "++++++++++++++++++++++++++++++++++++"
 				"""
-				print "path"
-				#path = path[::-1]
-				
-				while path:
-					tmp = path.pop()
-					sys.stdout.write("(%d, %d, %d)" % (tmp.top, tmp.left, tmp.dir))
+				"""
+				if fuck:
+					print "path"
+					#path = path[::-1]
 					
-				print "endpath"
-				
+					while path:
+						tmp = path.pop()
+						sys.stdout.write("(%d, %d, %d)" % (tmp.top, tmp.left, tmp.dir))
+						
+					print "endpath"				
 				"""
 				
 				player.dir = move_dir
+				tmpPlayer.dir = move_dir    #Next position
+				
+					
+					
+				tmpPlayer = self.nextPos(tmpPlayer, path, -1)
+				if len(path) >= 2:
+					#print len(path)
+					tmpPlayer = self.nextPos(tmpPlayer, path, -2)
+				
+				
+				#enemy here
+				bulletDir = self.isThreatenedByEnemy(tmpPlayer)		
+				if bulletDir <> 4:
+					if (move_dir%2 == 0 and bulletDir%2 == 0) or (move_dir%2 <> 0 and bulletDir%2 <> 0):
+						move_dir = bulletDir
+						shoot = 1			
+						print "enemy future - fire"
+					else :
+						move_dir = 4						
+						shoot = 0
+						print "enemy future - it's OK"
+				
+				
+				bulletDir = self.isThreatenedByBullet(tmpPlayer)				
+				if bulletDir <> 4:
+					if (move_dir%2 == 0 and bulletDir%2 == 0) or (move_dir%2 <> 0 and bulletDir%2 <> 0):
+						move_dir = bulletDir
+						shoot = 1
+					else:
+						move_dir = 4									
+						shoot = 0
+						print "bullet future - it's OK"
+						
+				#Error: move is not exactly right (unstuck code)
+				
+				enemyDir = self.isThreatenedByEnemy(player)
+				if enemyDir <> 4:
+					move_dir = enemyDir
+					shoot = 1	
+					print "enemy now - fire"											
+				
+				bulletDir = self.isThreatenedByBullet(player)
+				if bulletDir <> 4:
+					move_dir = bulletDir
+					shoot = 1
+					print "bullte now - fire"	
+
 				if self.canFire(player):	
 					shoot = 1
-					print "Enemy found"
+					#print "Enemy found"
 				else: 
-					shoot = 0	
-					
-				player = self.nextPos(player)
-				tmp = self.isThreatened(player)
-				if tmp <> 4:
-					move_dir = 4
-					shoot = 1
+					shoot = 0
 				
-			#lastMove = move_dir
+			lastMove = move_dir
 			#print move_dir
 				
 			print moveDir[move_dir]			
 			#print lastMove
 			
-			
+			#print "NEW"
 			
 			#keep_action = 0
 			keep_action = 0
